@@ -1,6 +1,6 @@
 {
   "name": "keeprunning",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Keeps a process running. If the process dies then it's immediately respawned.",
   "main": "keeprunning.js",
   "bin": {
@@ -15,5 +15,5 @@
   "bugs": {
     "url": "https://github.com/trappar/keeprunning/issues"
   },
-  "homepage": "https://github.com/trappar/keeprunning#readme",
+  "homepage": "https://github.com/trappar/keeprunning#readme"
 }
