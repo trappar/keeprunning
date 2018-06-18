@@ -1,6 +1,6 @@
 {
   "name": "keeprunning",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Keeps a process running. If the process dies then it's immediately respawned.",
   "main": "keeprunning.js",
   "bin": {
