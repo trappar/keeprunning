@@ -1,21 +1,48 @@
 #!/usr/bin/env node
 
 const commandLineArgs = require('command-line-args');
-const {spawn, execSync} = require('child_process');
+const { spawn, execSync } = require('child_process');
 
-const options = commandLineArgs([
-    { name: 'command', alias: 'c', multiple: true, type: String,  defaultOption: true },
+const optionDefinitions = [
     { name: 'errorsOnly', alias: 'e', type: Boolean }
-]);
+];
+
+const parsedArgv = getParsedArgv(optionDefinitions);
+
+const options = commandLineArgs(
+    optionDefinitions,
+    { argv: parsedArgv.args }
+);
 
 // Handle command line arguments
-if (!options.command || !options.command[0]) {
+if (!parsedArgv.command) {
     exitWithMessage('Must supply a command to run as the argument for this command.');
 }
 
 let running; // This is where we'll store the currently running child process
-const command = options.command[0];
-const args = options.command.slice(1);
+
+function getParsedArgv(optionDefinitions) {
+    for (let i = 2; ; i++) {
+        const option = process.argv[i];
+        let optionKnown = false;
+        optionDefinitions.forEach(definition => {
+            if (option === `--${definition.name}` || option === `-${definition.alias}`) {
+                optionKnown = true;
+                if (definition.type !== Boolean) {
+                    i++;
+                }
+            }
+        });
+
+        if (!optionKnown) {
+            return {
+                args: process.argv.slice(2, i),
+                command: process.argv[i],
+                commandArgs: process.argv.slice(i + 1)
+            }
+        }
+    }
+}
 
 function exitWithMessage(message, code) {
     code = (code) ? code : 1;
@@ -25,7 +52,7 @@ function exitWithMessage(message, code) {
 
 function spawnCommand(exitStatus) {
     if (!options.errorsOnly || exitStatus !== 0) {
-        running = spawn(command, args, {stdio: ['ignore', process.stdout, process.stderr]});
+        running = spawn(parsedArgv.command, parsedArgv.commandArgs, { stdio: ['ignore', process.stdout, process.stderr] });
         running.on('close', spawnCommand);
     }
 }
@@ -48,9 +75,9 @@ process.once('SIGTERM', function() {
 });
 
 try {
-    execSync(`which ${command}`)
+    execSync(`which ${parsedArgv.command}`)
 } catch (e) {
-    exitWithMessage(`Command "${command}" could not be found.`);
+    exitWithMessage(`Command "${parsedArgv.command}" could not be found.`);
 }
 
 // Start up the command
