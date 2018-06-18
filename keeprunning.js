@@ -1,9 +1,21 @@
 #!/usr/bin/env node
 
-const spawn = require('child_process').spawn;
-const execSync = require('child_process').execSync;
+const commandLineArgs = require('command-line-args');
+const {spawn, execSync} = require('child_process');
 
-var running; // This is where we'll store the currently running child process
+const options = commandLineArgs([
+    { name: 'command', alias: 'c', multiple: true, type: String,  defaultOption: true },
+    { name: 'errorsOnly', alias: 'e', type: Boolean }
+]);
+
+// Handle command line arguments
+if (!options.command || !options.command[0]) {
+    exitWithMessage('Must supply a command to run as the argument for this command.');
+}
+
+let running; // This is where we'll store the currently running child process
+const command = options.command[0];
+const args = options.command.slice(1);
 
 function exitWithMessage(message, code) {
     code = (code) ? code : 1;
@@ -11,9 +23,11 @@ function exitWithMessage(message, code) {
     process.exit(code);
 }
 
-function spawnCommand() {
-    running = spawn(command, args, {stdio: ['ignore', process.stdout, process.stderr]});
-    running.on('close', spawnCommand);
+function spawnCommand(exitStatus) {
+    if (!options.errorsOnly || exitStatus !== 0) {
+        running = spawn(command, args, {stdio: ['ignore', process.stdout, process.stderr]});
+        running.on('close', spawnCommand);
+    }
 }
 
 // Handle process exit gracefully
@@ -33,13 +47,6 @@ process.once('SIGTERM', function() {
     process.exit();
 });
 
-// Handle command line arguments
-if (!process.argv[2]) {
-    exitWithMessage('Must supply a command to run as the argument for this command.');
-}
-const command = process.argv[2];
-const args = process.argv.slice(3);
-
 try {
     execSync(`which ${command}`)
 } catch (e) {
@@ -47,4 +54,4 @@ try {
 }
 
 // Start up the command
-spawnCommand();
+spawnCommand(1);
